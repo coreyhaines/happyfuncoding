@@ -22,7 +22,7 @@ ActiveRecord::Schema.define(:version => 20110605020639) do
 
   create_table "assets", :force => true do |t|
     t.string   "name"
-    t.binary   "data",       :limit => 2147483647
+    t.binary   "data"
     t.datetime "created_at"
     t.datetime "updated_at"
     t.integer  "user_id"
@@ -45,7 +45,7 @@ ActiveRecord::Schema.define(:version => 20110605020639) do
     t.integer  "user_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.text     "code",               :limit => 2147483647
+    t.text     "code"
   end
 
   add_index "function_versions", ["public_function_id"], :name => "index_function_versions_on_function_id"
@@ -56,7 +56,7 @@ ActiveRecord::Schema.define(:version => 20110605020639) do
     t.integer  "program_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.text     "message",    :limit => 2147483647
+    t.text     "message"
   end
 
   add_index "messages", ["program_id"], :name => "index_messages_on_program_id"
@@ -67,7 +67,7 @@ ActiveRecord::Schema.define(:version => 20110605020639) do
     t.integer  "user_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.text     "text",       :limit => 2147483647
+    t.text     "text"
   end
 
   add_index "page_versions", ["page_id"], :name => "index_page_versions_on_page_id"
@@ -76,7 +76,7 @@ ActiveRecord::Schema.define(:version => 20110605020639) do
   create_table "pages", :force => true do |t|
     t.integer  "user_id"
     t.string   "name"
-    t.text     "text",       :limit => 2147483647
+    t.text     "text"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
@@ -89,8 +89,8 @@ ActiveRecord::Schema.define(:version => 20110605020639) do
     t.integer  "user_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.text     "start_code", :limit => 2147483647
-    t.text     "loop_code",  :limit => 2147483647
+    t.text     "start_code"
+    t.text     "loop_code"
   end
 
   add_index "program_versions", ["program_id"], :name => "index_program_versions_on_program_id"
@@ -101,8 +101,8 @@ ActiveRecord::Schema.define(:version => 20110605020639) do
     t.string   "name"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.text     "start_code", :limit => 2147483647
-    t.text     "loop_code",  :limit => 2147483647
+    t.text     "start_code"
+    t.text     "loop_code"
   end
 
   add_index "programs", ["name"], :name => "index_programs_on_name"
@@ -111,7 +111,7 @@ ActiveRecord::Schema.define(:version => 20110605020639) do
   create_table "public_functions", :force => true do |t|
     t.integer "user_id"
     t.string  "name"
-    t.text    "code",    :limit => 2147483647
+    t.text    "code"
   end
 
   add_index "public_functions", ["name"], :name => "index_functions_on_name"
