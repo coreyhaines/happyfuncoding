@@ -1,0 +1,76 @@
+
+<div class="areaLabel">
+	Your art
+</div>
+<div class="thinBorder grayBackground">
+	<% if @user %>
+		<div>
+			<a onclick="$('#uploadForm').slideDown()" style="cursor:pointer;">Upload >></a>
+		</div>
+		<div id="uploadForm" style="display:none;">
+			<table>
+				<tr>
+					<td>
+						<div id="uploadedImageContainer" style="border: 2px dotted gray; width:100px; height:100px;">
+						</div>
+					</td>
+					<td>
+						<button id="uploadButton">Choose file</button> (jpeg and png accepted)</br>
+						<span class="areaLabel">Unique Name:</span><input type="text" id="uploadName"/><br/>
+						<button onclick="uploadSaveButton()">Save</button>
+					</td>
+				</tr>
+			</table>
+		</div>
+		
+		<% if @user.assets.length == 0 %>
+			<i>You have not uploaded any images yet</i>
+		<% end %>
+		
+		<table>
+			<tr>
+				<% @user.assets.each_with_index do |a,i| %>
+					<% if i % 6 == 0 %>
+						</tr>
+						<tr>
+					<% end %>
+					<td>
+						<img onclick="deleteArt(<%=a.id-%>)" style="max-width:100px; max-height:100px;" src="/home/get_asset?id=<%=a.id-%>"/><br/>
+						<%= a.name -%>
+					</td>
+				<% end %>
+			</tr>
+		</table>
+	<% else %>
+		Login to upload artwork	
+	<% end %>
+</div>
+
+<% @assets = Asset.all %>
+<% user_id = @user ? @user.id : 0 %>
+<% @assets.delete_if { |a| a.user_id == user_id } %>
+
+<div class="areaLabel" style="margin:15px 0 0 0;">
+	Other's art
+</div>
+<div class="thinBorder grayBackground">
+	<table>
+		<tr>
+			<% @assets.each_with_index do |a,i| %>
+				<% if i % 6 == 0 %>
+					</tr>
+					<tr>
+				<% end %>
+				<td>
+					<% if @user && @user.super_user? %>
+						<img onclick="deleteArt(<%=a.id-%>)" style="max-width:100px; max-height:100px;" src="/home/get_asset?id=<%=a.id-%>"/><br/>
+					<% else %>
+						<img style="max-width:100px; max-height:100px;" src="/home/get_asset?id=<%=a.id-%>"/><br/>
+					<% end %>
+					<%= a.name -%>
+				</td>
+			<% end %>
+		</tr>
+	</table>
+</div>
+

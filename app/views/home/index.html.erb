@@ -1,0 +1,1285 @@
+<html>
+
+<script src="/javascripts/jquery.js"></script>
+<script src="/javascripts/jquery-ui.js"></script>
+<!--
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/jquery-ui.js"></script>
+-->
+<!--
+<script src="/javascripts/editarea/edit_area/edit_area.js"></script>
+<script src="/javascripts/editarea/edit_area/edit_area_loader.js"></script>
+<script src="/javascripts/codepress/codepress.js"></script>
+-->
+
+<script src="/javascripts/ajaxupload.js"></script>
+<script src="/javascripts/jquery.caret.1.02.js"></script>
+<script src="/javascripts/jquery.hive.js"></script>
+<script src="/javascripts/jquery.textarea.js"></script>
+<link href="/custom-theme/jquery-ui-1.8.1.custom.min.css" rel="stylesheet" type="text/css"/>
+
+<script type="text/javascript">
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-23613659-1']);
+	_gaq.push(['_trackPageview']);
+	(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	})();
+</script>
+
+<style>
+	.ui-dialog {
+		background:#D9D8CB; 
+	}
+</style>
+
+<script type="text/javascript">
+	// Things that need to happen to functions
+	// When you edit the public function it needs to update
+	// Somehow this means that loadFunc or something has to run
+	// The close button should ask if you want to save the changes
+	
+	var firstTimeInEditor = true;
+	var userName = "<%= @user ? @user.name : "" -%>";
+	var uploadAssetId = 0;
+
+	$(document).ready( function() {
+		$("#mainTabs").tabs();
+
+		$("#mainTabs").bind( 'tabsshow', function(event, ui) {
+			if( event.target.id != "mainTabs" ) {
+				return;
+			}
+			if( ui.panel.id == 'artPanel' ) {
+				loadArtTab();
+			}
+			resize();
+		});
+		
+		$("#startEditor").click( function() {
+			programDirty();
+			if( firstTimeInEditor ) {
+				$("#startEditor").html( "" );
+				$("#loopEditor").html( "" );
+				firstTimeInEditor = false;
+			}
+			challengeStartCode = null;
+			challengeLoopCode = null;
+			startThread();
+		});
+
+		$("#loopEditor").click( function() {
+			programDirty();
+			if( firstTimeInEditor ) {
+				$("#startEditor").html( "" );
+				$("#loopEditor").html( "" );
+				firstTimeInEditor = false;
+			}
+			challengeStartCode = null;
+			challengeLoopCode = null;
+			startThread();
+		});
+
+		$("#startEditor").keydown( function(event) {
+			if( event.which == 8 ) {
+				var c = $("#startEditor").caret();
+				var before = $("#startEditor").val();
+				var lastFour = before.substring( c.start-4, c.start );
+				if( lastFour == "    " ) {
+					after = before.substr( c.start, before.length );
+					before = before.substr( 0, c.start-4 );
+					$("#startEditor").val( before + " " + after );
+					$("#startEditor").caret( before.length+1, before.length+1 );
+				}
+			}
+			else if( event.which == 46 ) {
+				var c = $("#startEditor").caret();
+				var before = $("#startEditor").val();
+				var nextFour = before.substring( c.start, c.start+4 );
+				if( nextFour == "    " ) {
+					after = before.substr( c.start+4, before.length );
+					before = before.substr( 0, c.start );
+					$("#startEditor").val( before + " " + after );
+					$("#startEditor").caret( before.length, before.length );
+				}
+			}
+		});
+
+		$("#startEditor").keyup( function(e) {
+			startThread();
+		});
+		$("#loopEditor").keyup( startThread );
+
+		$("#functionEditor").keyup( function() {
+			updateFunctionsCode();
+			startThread();
+		});
+		
+		updateSaveButton();
+		$("#programName").keyup( updateSaveButton );
+
+/*		
+		if( true ) {
+			editAreaLoader.init( {
+				id: "startEditor",
+				syntax: "js",
+				start_highlight: true,
+				allow_toggle: false,
+				toolbar: "",
+				key_up_callback: function(event) {
+					startThread();
+				}
+			} );
+
+			editAreaLoader.init( {
+				id: "loopEditor",
+				syntax: "js",
+				start_highlight: true,
+				allow_toggle: false,
+				toolbar: "",
+				key_up_callback: function(event) {
+					startThread();
+				}
+			});
+		}
+*/
+
+        var mainCanvas0 = document.getElementById("mainCanvas0");
+        var mainCanvas1 = document.getElementById("mainCanvas1");
+		context[0] = mainCanvas0.getContext("2d");
+		context[1] = mainCanvas1.getContext("2d");
+		mainCanvas0.setAttribute( "width", canvasW );
+		mainCanvas0.setAttribute( "height", canvasH );
+		mainCanvas0.width = mainCanvas0.width; // forces a reset
+		mainCanvas1.setAttribute( "width", canvasW );
+		mainCanvas1.setAttribute( "height", canvasH );
+		mainCanvas1.width = mainCanvas1.width; // forces a reset
+		$("#mainCanvas1").css( "position", "absolute" );
+		$("#mainCanvas1").css( "left", $("#mainCanvas0").position().left );
+		$("#mainCanvas1").css( "top", $("#mainCanvas0").position().top );
+
+		$(window).mousemove( function(event) {
+			var off = $("#mainCanvas0").offset();
+			mouseX = event.pageX - off.left;
+			mouseY = event.pageY - off.top;
+		});
+
+		$("#mainCanvas0").mousedown( function(event) {
+			mouseDown = true;
+		});
+
+		$("#mainCanvas1").mousedown( function(event) {
+			mouseDown = true;
+		});
+
+		$(window).mouseup( function(event) {
+			mouseDown = false;
+			challengeMouseDown = false;
+		});
+
+		$("body").keydown( function(event) {
+			keyDown = event.which;
+		});
+
+		$("body").keyup( function(event) {
+			keyDown = null;
+		});
+		
+		$("#functionCodeDivDrag").mousedown( function(event) {
+			$("body").mousemove( function(event) {
+				var top = $("#functionCodeDiv").offset().top;
+				$("#functionCodeDiv").css( "height", event.pageY - top );
+				$("#functionEditor").css( "height", $("#functionCodeDiv").height() - $("#functionEditor").position().top );
+				resize();
+			});
+			$("body").mouseup( function() {
+				$(this).unbind( "mousemove" );
+			});
+		});
+		
+		$("#startCodeDivDrag").mousedown( function(event) {
+			$("body").mousemove( function(event) {
+				var top = $("#startCodeDiv").offset().top;
+				$("#startCodeDiv").css( "height", event.pageY - top );
+				$("#startEditor").css( "height", event.pageY - top - 30 );
+				resize();
+			});
+			$("body").mouseup( function() {
+				$(this).unbind( "mousemove" );
+			});
+		});
+
+		$("#loopCodeDivDrag").mousedown( function(event) {
+			var top = $("#loopCodeDiv").offset().top;
+ 			$("body").mousemove( function(event) {
+				$("#loopCodeDiv").css( "height", event.pageY - top );
+				$("#loopEditor").css( "height", event.pageY - top - 20 );
+				resize();
+			});
+			$("body").mouseup( function() {
+				$(this).unbind( "mousemove" );
+			});
+		});
+
+		$("#showMiniBrowserButton").css( "display", "none" );
+
+		resize();
+		$(window).resize( resize );
+
+		loadPage( "home", true );
+
+		setTimeout( function() {
+			<% if @load_program %>
+				loadProgram( '<%=@load_program.name-%>', <%= @load_program.id -%>, false );
+			<% else %>
+				loadProgram( 'zack:flinky', null, false, true );
+			<% end %>
+		}, 100 );
+
+		$("textarea").css( "white-space", "pre" );
+		$("textarea").tabby( {tabString:"    "} );
+		
+        startThread();
+        runOneFrame();
+    });
+    
+    function resize() {
+		var pageW = $(window).width();
+		var pageH = $(window).height();
+		var mcTop = $("#mainContainer").offset().top;
+		
+		$("#mainContainer").css( "position", "relative" );
+		$("#mainContainer").css( "width", "100%" );
+		
+		var h = $("#mainCol1").height();
+		h = Math.max( h, $("#mainCol2").height() );
+		h = Math.max( h, $("#mainCol3").height() );
+		if( $("#learnEdit").css("display") != "none" ) {
+			h = Math.max( h, $("#learnEdit").height() );
+		}
+		
+		$("#codePanel").css( "height", h + $("#codePanel").position().top + 20 );
+		
+		var col3Visible = $("#mainCol3").css( "display" ) != "none";
+		
+		var mainW = $("#mainContainer").width();
+		var spacing = 5;
+		var col2W = 350;
+		var col3W = col3Visible ? 300 : 0;
+		var col1W = mainW - col3W - col2W - spacing * ( col3Visible ? 2 : 1 );
+		var col1L = 0;
+		var col2L = col1L + col1W + spacing;
+		var col3L = col2L + col2W + spacing;
+
+		$("#mainCol1").css( "position", "absolute" );
+		$("#mainCol1").css( "width", col1W );
+		$("#mainCol1").css( "left", col1L );
+		
+		$("#mainCol2").css( "position", "absolute" );
+		$("#mainCol2").css( "width", col2W );
+		$("#mainCol2").css( "left", col2L );
+		
+		$("#mainCol3").css( "position", "absolute" );
+		$("#mainCol3").css( "width", col3W );
+		$("#mainCol3").css( "left", col3L );		
+		
+		$("#mainCanvas1").css( "position", "absolute" );
+		$("#mainCanvas1").css( "left", $("#mainCanvas0").position().left );
+		$("#mainCanvas1").css( "top", $("#mainCanvas0").position().top );
+    }
+
+	function trim(s) {
+		s = s.replace(/(^\s*)|(\s*$)/gi,"");
+		s = s.replace(/[ ]{2,}/gi," ");
+		s = s.replace(/\n /,"\n");
+		return s;
+	}
+	
+	function programDirty() {
+		//if( $("#startEditor").val() != lastSaveStartCode || $("#loopEditor").val() != lastSaveLoopCode  ) {
+		//	$("#programName").css( "background-color", "yellow" );
+		//}
+	}
+	
+	function loadingAnim( sel ) {
+		$(sel).html( "<span class='areaLabel'><img src='/images/waiting.gif'/> Loading...</span>" );
+	}
+
+	function updateSaveButton() {
+		if( $("#programName").val() == "" ) {
+			$("#saveButton").attr( "disabled", 1 );
+		}
+		else {
+			$("#saveButton").removeAttr( "disabled" );
+		}
+	}
+
+	function hideMiniBrowser() {
+		$("#mainCol3").css( "display", "none" );
+		$("#showMiniBrowserButton").css( "display", "inline-block" );
+		resize();
+	}
+
+	function showMiniBrowser() {
+		$("#mainCol3").css( "display", "block" );
+		$("#showMiniBrowserButton").css( "display", "none" );
+		resize();
+	}
+
+	function loadArtTab() {
+		$("#artContainer").load( "/home/get_art", function() {
+			if( $("#uploadButton").length > 0 ) {
+				new AjaxUpload( 'uploadButton', {
+					action: '/home/upload',
+					name: 'userfile',
+					autoSubmit: true,
+					responseType: false,
+					onChange: function(file, extension){
+					},
+					onSubmit: function(file, extension) {
+					},
+					onComplete: function(file, response) {
+						uploadAssetId = response;
+						$("#uploadedImageContainer").html( "<img style='max-width:100px; max-height:100px;' src='/home/get_asset?id=" + response + "'/>" );
+					}
+				});
+			}
+		});
+	}
+	
+	function uploadSaveButton() {
+		var name = $("#uploadName").val();
+		if( name == "" ) {
+			alert( "You must give the asset a unique name" );
+		}
+		else {
+			$.post( "/home/save_asset", { "name":name, "id":uploadAssetId }, function(data) {
+				if( data == "saved" ) {
+					loadArtTab();
+				}
+				else {
+					alert( "There was an existing asset with that name, please change and try again" );
+				}
+			});
+		}
+	}
+	
+	function deleteArt( id ) {
+		var r = confirm( "Art you sure you want to delete the image?" );
+		if( r ) {
+			$.post( "/home/delete_asset", { "id":id }, function() {
+				loadArtTab();
+			});
+		}
+	}
+
+	function closeAllMenus() {
+		$(".menu").css( "display", "none" );
+	}
+
+	// Program
+	//======================================================================================================
+	function clearCanvases() {
+		$("#mainCanvas0").css( "visibility", "visible" );
+		$("#mainCanvas1").css( "visibility", "hidden" );
+		context[0].setTransform( 1, 0, 0, 1, 0, 0 );
+		context[0].fillStyle = "#FFFFFF";
+		context[0].globalAlpha = 1;
+		context[0].fillRect( 0, 0, canvasW, canvasH );
+		$("#mainCanvas1").css( "visibility", "visible" );
+		context[1].setTransform( 1, 0, 0, 1, 0, 0 );
+		context[1].fillStyle = "#FFFFFF";
+		context[1].globalAlpha = 1;
+		context[1].fillRect( 0, 0, canvasW, canvasH );
+		$("#mainCanvas1").css( "visibility", "hidden" );
+	}			
+
+	function clearProgram() {
+		frameNum = 0;
+		$("#startEditor").val( "" );
+		$("#loopEditor").val( "" );
+		$("#functionEditor").val( "" );
+		$("#twiddlers").html( "" );
+		$("#createATwiddlerNote").css( "display", "block" );
+		$("#programName").val( "" );
+		$("#masterErrorState").html( "" );
+		$("#startCodeErrorState").html( "" );
+		$("#loopCodeErrorState").html( "" );
+		clearComments();
+		updateSaveButton();
+		setTimeout( clearCanvases, 100 );
+		$.Hive.destroy();
+	}
+	
+	var threadReturnedFunctions = null;
+	var exports;
+	
+	var lastSaveStartCode = "";
+	var lastSaveLoopCode = "";
+		
+    function saveProgram() {
+		var programName = $("#programName").val();
+		if( programName == "" ) {
+			return;
+		}
+		
+		// TELL the thread to eval and return the requested function symbols back
+		threadReturnedFunctions = null;
+		$.Hive.get(0).send( [null, null, null, null, null, null, true, null, imageDims, false] );
+
+		// WAIT for the thread to return
+		setTimeout( awaitThreadFunctions, 10 );
+    }
+
+	function awaitThreadFunctions() {
+		if( ! threadReturnedFunctions ) {
+			setTimeout( awaitThreadFunctions, 10 );
+		}
+		else {
+			// SEARCH the code for any exported symbols
+			var programName = $("#programName").val();
+			var startCode = $("#startEditor").val();
+			var loopCode  = $("#loopEditor").val();
+			lastSaveStartCode = startCode;
+			lastSaveLoopCode = loopCode;
+			exports = [];
+			var lines = startCode.split( "\n" );
+			for( var l in lines ) {
+				var m = lines[l].match( /^\s*(\$[^=\s]+)\s*=/ );
+				if( m ) {
+					exports.push( m[1] );
+				}
+			}
+
+			var count = 0;
+			funcNames = [];
+			funcCodes = [];
+			for( i in exports ) {
+				if( threadReturnedFunctions[ exports[i] ] ) {
+					funcNames[count] = exports[i];
+					funcCodes[count] = threadReturnedFunctions[ exports[i] ];
+					count++;
+				}
+			}
+			threadReturnedFunctions = null;
+	
+			// If exported symbols are found we need to ask the server about them
+			// If there's a conflict the the server says so and you are dumped
+			// back out where you have to change your program (some day, autmatically).
+			// You have the choice not to export
+			// If the server returns blank then it means the exports were accepted
+			// and we have to remove the function code from startCode
+
+			if( count > 0 ) {
+				var data = {};
+				data["count"] = count;
+				for( var i=0; i<count; i++ ) {
+					data["name-"+i] = funcNames[i];
+					data["code-"+i] = funcCodes[i];
+				}
+			
+				$.post( "/home/export_functions", data, function(html) {
+					if( html == "no conflicts" ) {
+						for( var i=0; i<count; i++ ) {
+							removeFunction( funcNames[i], funcCodes[i] );
+						}
+						var startCode = $("#startEditor").val();
+						var loopCode  = $("#loopEditor").val();
+						$.post( "/home/save_program", {
+							"program_name":programName,
+							"start_code":startCode,
+							"loop_code":loopCode
+						}, function(data) {
+							currentProgramVersionId = data.version_id;
+						});
+					}
+					else {
+						$("#exportConflictDialog").html( html );
+						$("#exportConflictDialog").dialog( { title:"Export conflict" } );
+					}
+
+					clearFunctions();
+				});
+			}
+			else {
+				$.post( "/home/save_program", {
+					"program_name":programName,
+					"start_code":startCode,
+					"loop_code":loopCode
+				}, function(data) {
+					currentProgramVersionId = data.version_id;
+				});
+			}
+
+			$("#savedMessage").css( "display", "block" );
+			$("#savedMessage").css( "position", "absolute" );
+			$("#savedMessage").css( "text-align", "center" );
+			$("#savedMessage").css( "left", $("#programName").position().left+5 );
+			$("#savedMessage").css( "top", $("#programName").position().top+5 );
+			$("#savedMessage").css( "width", $("#programName").width() );
+			$("#savedMessage").css( "height", $("#programName").height() );
+			setTimeout( function() {
+				$("#savedMessage").css( "display", "none" );
+			}, 1000 );
+		}
+	}
+	
+	function removeFunction( name, code ) {
+		var startCode = $("#startEditor").val();
+		var origName = name;
+		name = name.replace( /\$/, "\\$" );
+		var r = new RegExp( name + "\\s*=\\s*function", "m" );
+		var off = startCode.search( r );
+		var top = startCode.substring( 0, off );
+		var funcOff = startCode.substr( off ).search( /function/ );
+		var bot = startCode.substr( off+funcOff+code.length );
+		var a = top + "\n// " + origName + " was exported to a public function\n\n" + bot;
+		$("#startEditor").val( a );
+	}
+	
+	function closeExportConflictDialog() {
+		$("#exportConflictDialog").dialog( "close" );
+	}
+	
+    function shareProgram() {
+		var programName = $("#programName").val();
+		$("#shareProgramInput").val( "http://happyfuncoding.com?id="+currentProgramId );
+		$("#embedProgramInput").val( "<iframe src='http://happyfuncoding.com/home/embeded?id="+currentProgramId+"' width='350px' height='350px' frameborder='0' marginheight='10' scrolling='no' ></iframe>" );
+		$("#shareProgramDialog").dialog( { "title":"Share this link with your friends", "width":450, "height":200, "position":[300,150] } );
+		$("#shareProgramDialog").dialog( 'open' );
+    }
+
+	var currentProgramName = "";
+	var currentProgramVersionId = 0;
+	
+    function loadProgram( name, id, isChallenge, hideName ) {
+		clearProgram();
+		$.get( "/home/load_program", { "id":id, "name":name }, function(data) {
+			firstTimeInEditor = false;
+			
+			if( isChallenge ) {
+				challengeStartCode = data.start_code;
+				challengeLoopCode = data.loop_code;
+			}
+			else {
+				currentProgramName = name;
+				challengeStartCode = null;
+				challengeLoopCode = null;
+				$("#programName").val( data.full_name );
+				updateSaveButton();
+				$("#startEditor").val( data.start_code );
+				$("#loopEditor").val( data.loop_code );
+				//editAreaLoader.setValue( "startEditor", data.start_code );
+				//editAreaLoader.setValue( "loopEditor", data.loop_code );
+				lastSaveStartCode = data.start_code;
+				lastSaveLoopCode = data.loop_code;
+				currentProgramId = data.program_id;
+
+				loadComments();
+				if( hideName ) {
+					$("#programName").val( "" );
+				}
+			}
+			
+			clearCanvases();
+
+			startThread();
+	        runOneFrame();
+	        
+	        resize();
+		});
+    }
+
+	function changeVersionProgram( which ) {
+		$.get( "/home/version_program", { "program_id":currentProgramId, "version_current_id":currentProgramVersionId, "version_which":which }, function(data) {
+			$("#startEditor").val( data.start_code );
+			$("#loopEditor").val( data.loop_code );
+			$("#programVersionLabel").html( data.version_label );
+			currentProgramVersionId = data.version_id;
+		});
+	}
+
+    function showPrograms() {
+		closeAllMenus();
+		loadingAnim( "#programName" );
+		var programName = $("#programName").val();
+		$("#myPrograms").css( "display", "block" );
+		loadingAnim( "#myPrograms" );
+		$("#myPrograms").css( "position", "absolute" );
+		var pos = $("#myProgramsButton").position();
+		$("#myPrograms").css( "position", "absolute" );
+		$("#myPrograms").css( "left", pos.left );
+		$("#myPrograms").css( "top", pos.top + 25 );
+		$("#myPrograms").css( "z-index", 50 );
+		$("#myPrograms").load( "/home/my_programs", function() {
+			$("#myPrograms").mouseleave( function() {
+				$("#myPrograms").css( "display", "none" );
+			});
+			$(".programNameLineItem").hover(
+				function() {
+					$(this).css( "background-color", "#9C897E" );
+				},
+				function() {
+					$(this).css( "background-color", "transparent" );
+				}
+			);
+			$(".programNameLineItem").click( function() {
+				var name = $(this).html().match( /\s*(.*)/ );
+				loadProgram( trim(name[1]), $(this).attr("programId"), false );
+				$("#myPrograms").css( "display", "none" );
+			});
+		});
+    }
+	
+	function loadProgramFromProgramName() {
+		loadProgram( $("#programName").val() );
+	}
+	
+	var pause = false;
+	function pauseProgram() {
+		pause = !pause;
+		if( pause ) {
+			$("#pauseButton").attr( "src", "/images/forward_button.png" );
+			$("#pauseWarning").css( "display", "inline-block" );
+		}
+		else {
+			$("#pauseButton").attr( "src", "/images/pause_button.png" );
+			$("#pauseWarning").css( "display", "none" );
+		}
+	}
+	
+	// Comments
+	//======================================================================================================
+
+	// @TODO: Eliminate the id part of this and always lookup program by name
+	
+	function clearComments() {
+		$("#programComments").html( "" );
+	}
+
+	function loadComments() {
+		$("#programComments").load( "/home/load_comments", { "id":currentProgramId, "name":currentProgramName }, function() {
+			resize();
+		});
+	}
+
+	function postComment() {
+		var message = $("#postComment").val();
+		$.post( "/home/post_comment", { "id":currentProgramId, "name":currentProgramName, "message":message }, function() {
+			loadComments();
+		});
+	}
+
+	function deleteComment( mid ) {
+		$.post( "/home/delete_comment", { "mid":mid }, function() {
+			loadComments();
+		});
+	}
+	
+	// Page
+	//======================================================================================================
+	
+	var currentPageName = "";
+	var pageStack = []
+	var pageStackRead = 0;
+	var currentPageId = 0;
+	var currentPageVersionId = 0;
+
+    function loadPage( name, updateStack ) {
+		var m = name.match( /^(program|challenge):(.*)/ );
+		if( m ) {
+			loadProgram( m[2], null, m[1] == "challenge" );
+		}
+		else {
+			$.get( "/home/load_page", { "name":name }, function(data) {
+				if( updateStack ) {
+					pageStack[pageStackRead] = name;
+					pageStackRead++;
+				}
+				$("#learnDiv").html( data.html_text );
+				$("#learnEdit").val( data.raw_text);
+				$("#gotoPage").val( name );
+				$("#pageVersionLabel").html( "Current version" );
+				currentPageName = name;
+				currentPageId = data.page_id;
+				currentPageVersionId = 0;
+				resize();
+			});
+		}
+	}
+    
+	function changeVersionPage( which ) {
+		$.get( "/home/version_page", { "page_id":currentPageId, "version_current_id":currentPageVersionId, "version_which":which }, function(data) {
+			$("#learnEdit").val( data.raw_text );
+			$("#pageVersionLabel").html( data.version_label );
+			currentPageVersionId = data.version_id;
+		});
+	}
+
+    function backPage() {
+		if( pageStackRead > 1 ) {
+			pageStackRead--;
+		    loadPage( pageStack[pageStackRead-1], false );
+		}
+    }
+
+	var wasPaused = false;
+	function editPage() {
+		if( currentPageName != "users" && currentPageName != "all" && currentPageName != "actions" ) {
+			wasPaused = pause;
+			if( ! pause ) {
+				pauseProgram();
+			}
+			$("#mainCanvas1").css( "visibility", "hidden" );
+			$("#learnDiv").css( "display", "none" );
+			$("#learnEditContainer").slideDown( function() {
+				resize();
+			});
+			$("#codingMainArea").slideUp( function() {
+				resize();
+			});
+			$("#pageName").html( currentPageName );
+		}
+	}
+
+	function donePage() {
+		$.post( "/home/save_page", { "page_name":currentPageName, "text":$("#learnEdit").val() }, function () {
+			loadPage( currentPageName, false );
+			closePageEditor();
+		});
+	}
+	
+	function cancelPage() {
+		closePageEditor();
+	}
+	
+	function newPage() {
+		var name = $("#pageNameEditor").val();
+		$.post( "/home/new_page", { "name":name }, function(data) {
+			if( data == "success" ) {
+				currentPageName = name;
+				$("#learnEdit").val( "" );
+				$("#pageName").html( currentPageName );
+			}
+			else {
+				alert( "Page name already taken" );
+			}
+		});
+	}
+	
+	function gotoPage() {
+		var page = $("#gotoPage").val();
+	    loadPage( page, true );
+	}
+
+	function closePageEditor() {
+		$("#learnDiv").css( "display", "block" );
+		$("#learnEditContainer").slideUp();
+		$("#codingMainArea").slideDown( function(){
+			resize();
+			if( ! wasPaused ) {
+				pauseProgram();
+			}
+		});
+	}
+
+	// Friend
+	//======================================================================================================
+
+	function confirmDeleteFriend( name, id ) {
+		if( confirm( "Are you sure you want to un-friend" + name + "?" ) ) {
+			$.post( "/home/unfriend", { "id" : id }, function() {
+				$("#friendsDialogList").load( "/home/my_friends", function() {
+					setupFriendList();
+				});
+			});
+		}
+	}
+
+	function setupFriendList() {
+		$(".friendLineItem").hover(
+			function() {
+				$(this).css( "background-color", "#9C897E" );
+			},
+			function() {
+				$(this).css( "background-color", "transparent" );
+			}
+		);
+		$(".friendLineItem").click( function() {
+			confirmDeleteFriend( $(this).html(), $(this).attr("friendId") );
+		});
+	}
+	
+	function manageFriends() {
+		$("#manageFriendsDialog").dialog( { "title":"Manage friends", "width":"400px", "position":[300,150] } );
+		$("#friendsDialogList").load( "/home/my_friends", function() {
+			setupFriendList();
+		});
+	}
+
+	function addFriend() {
+		$("#friendsDialogList").load( "/home/add_friend", { "name":$("#findFriendInput").val() }, function() {
+			setupFriendList();
+		});
+	}
+				
+	// Public Functions
+	//======================================================================================================
+	
+	function showFunctions() {
+		// @TODO: Refactor to merge with above
+		closeAllMenus();
+		$("#functions").css( "display", "block" );
+		loadingAnim( "#functions" );
+		$("#functions").css( "position", "absolute" );
+		var pos = $("#functionsButton").position();
+		$("#functions").css( "position", "absolute" );
+		$("#functions").css( "left", pos.left );
+		$("#functions").css( "top", pos.top + 25 );
+		$("#functions").css( "z-index", 50 );
+		$("#functions").load( "/home/list_functions", function() {
+			$("#functions").mouseleave( function() {
+				$("#functions").css( "display", "none" );
+			});
+			$(".programNameLineItem","#functions").hover(
+				function() {
+					$(this).css( "background-color", "#9C897E" );
+				},
+				function() {
+					$(this).css( "background-color", "transparent" );
+				}
+			);
+			$(".programNameLineItem","#functions").click( function() {
+				editFunction( $(this).attr("functionId"), $(this).attr("functionName") );
+				$("#functions").css( "display", "none" );
+			});
+		});
+	}
+
+	var currentFunctionId = 0;
+	function editFunction( fid, name ) {
+		$("#functionCodeDivDrag").css( "display", "block" );
+		$("#functionCodeDiv").slideDown( function() {
+			resize();
+		});
+		$.get( "/home/load_function", { fid:fid }, function(data) {
+			$("#functionEditor").val( data.code );
+			currentFunctionId = data.function_id;
+			publicFunctionsEditting = name;
+			resize();
+		});
+	}
+
+	function saveFunction() {
+		$("#functionCodeDivDrag").css( "display", "none" );
+		var func = $("#functionEditor").val();
+		$.post( "/home/save_function", { func:func }, function(code) {
+			$("#functionCodeDiv").slideUp( function() {
+				resize();
+			});
+			clearFunctions();
+			startThread();
+		});
+	}
+	
+	function cancelFunction() {
+		$("#functionCodeDivDrag").css( "display", "none" );
+		$("#functionCodeDiv").slideUp( function() {
+			resize();
+		});
+		$("#functionEditor").val( "" );
+		clearFunctions();
+		startThread();
+		currentFunctionId = 0;
+		publicFunctionsEditting = "";
+	}
+	
+	function deleteFunction( fid ) {
+		$.post( "/home/delete_function", { fid:fid }, function() {
+			$("#functions").html( "" );
+		});
+	}
+
+	var currentFunctionVersionId = 0;
+	function changeVersionFunction( which ) {
+		$.get( "/home/version_function", { "function_id":currentFunctionId, "version_current_id":currentFunctionVersionId, "version_which":which }, function(data) {
+			$("#functionEditor").val( data.code );
+			$("#functionVersionLabel").html( data.version_label );
+			currentFunctionVersionId = data.version_id;
+			updateFunctionsCode();
+			startThread();
+		});
+	}
+
+	// Twiddlers
+	//======================================================================================================
+	
+	var twiddlers = {};
+	var twiddlerChecks = {};
+	
+	function setVarsFromTwiddlers( varName ) {
+		changingTwiddlers = {};
+		var startCode = $("#startEditor").val();
+		var lines = startCode.split( "\n" );
+		for( var i in lines ) {
+			var m = lines[i].match( "^(_\\S+)\\s*=\\s*(\\S+)" )
+			if( m ) {
+				for( var j in twiddlers ) {
+					if( j == m[1] ) {
+						lines[i] = "" + m[1] + " = " + twiddlers[j];
+						break;
+					}
+				}
+			}
+		}
+		var newStr = lines.join( "\n" );
+		$("#startEditor").val( newStr );
+		if( $("#"+varName+"_restart").attr( "checked" ) ) {
+			startThread();
+		}
+	}
+
+	function setupTwiddlers() {
+		$(".twiddler").mousedown( function(event) {
+			var startVal = Number( $(this).val() );
+			startVal = Math.max( 0.001, startVal );
+			var startY = Number( event.pageY );
+			var varName = $(this).attr( "varName" );
+			var deThis = this;
+			$("body").mousemove( function(event) {
+				var newVal = Number( startVal * Math.exp( (startY - event.pageY)/50 ) );
+				newVal = newVal.toPrecision( 4 );
+				$(deThis).val( newVal );
+				twiddlers[varName] = newVal;
+				setVarsFromTwiddlers( varName );
+			});
+			$("body").mouseup( function() {
+				$(this).unbind( "mousemove" );
+			});
+		});
+
+		$(".twiddler").change( function(event) {
+			var varName = $(this).attr( "varName" );
+			twiddlers[varName] = $(this).val();
+			setVarsFromTwiddlers( varName );
+		});
+		
+		$(".twiddlerRestartCheck").change( function(event) {
+			twiddlerChecks[ $(this).attr( "varName" ) ] = $(this).attr( "checked" ); 
+		});
+	}
+	
+	<%= render :partial=>"main.js" -%>
+
+</script>
+
+
+<body>
+
+<div id="functionsSaveDialog"></div>
+
+<div id="mainTabs">
+	<ul>
+		<li><a href="#codePanel"><span class="tabLabel">Code</span></a></li>
+		<li><a href="#artPanel"><span class="tabLabel">Art</span></a></li>
+		<li><a href="#refPanel"><span class="tabLabel">Help</span></a></li>
+		<li><a href="#videoPanel"><span class="tabLabel">Video tutorials</span></a></li>
+	</ul>
+
+	<div>
+
+		<div id="codePanel">
+			<div id="manageFriendsDialog" style="display:none;">
+				<form action="javascript:addFriend()">
+					<span class="areaLabel">
+						Find a friend:
+					</span>
+					<input type="text" id="findFriendInput" value=""/>
+					<button>Add</button>
+				</form>
+				<div class="areaLabel">
+					Current friends:
+				</div>
+				<div id="friendsDialogList" style="margin-left:10px;">
+					none
+				</div>
+				<div style="margin-top:10px; text-align:center;">
+					<button onclick="$('#manageFriendsDialog').dialog('close')">Ok</button>
+				</div>
+			</div>
+			
+			<div id="shareProgramDialog" style="display:none;">
+				<div class="areaLabel">Share:</div>
+				<input type="text" id="shareProgramInput" value="" style="width:100%;"/>
+				<div class="areaLabel">Embed:</div>
+				<input type="text" id="embedProgramInput" value="" style="width:100%;"/>
+				<center>
+					<button style="margin-top:20px;" onclick="$('#shareProgramDialog').dialog('close')">Ok</button>
+				</center>
+			</div>
+			
+			<div id="exportConflictDialog" style="display:none;">
+			</div>
+			
+			<div id="findFriendSearchResults">
+			</div>
+			
+			<div id="savedMessage" class="areaLabel" style="background-color:yellow; display:none;">
+				Saved
+			</div>
+		
+			<div id="learnEditContainer" style="display:none;">
+				<div class="thinBorder grayBackground" style="padding:5px 5px 5px 5px; margin:0 0 10px 0;">
+					<span class="areaLabel">
+						Page name:
+					</span>
+					<span id="pageName" class="areaLabel">
+					</span>
+					<button onclick="donePage()">Done</button>
+					<button onclick="cancelPage()">Cancel</button>
+					<span class="areaLabel">
+						Version:
+					</span>
+					<button onclick="changeVersionPage('prev')">Prev.</button>
+					<button onclick="changeVersionPage('next')">Next</button>
+					<button onclick="changeVersionPage('curr')">Curr.</button>
+					<span id="pageVersionLabel">
+					</span>
+				</div>
+				<textarea class="thinBorder" id="learnEdit" style="overflow:auto; width:100%; height:600px;"></textarea>
+			</div>
+
+			<div id="codingMainArea">
+				<div class="thinBorder grayBackground" style="padding:5px 5px 5px 5px; margin:0 0 10px 0; ">
+					<span class="areaLabel">
+						Program name:
+					</span>
+					<form action="javascript:loadProgramFromProgramName()" style="padding: 0 0 0 0; margin: 0 0 0 0; display:inline-block;">
+						<input id="programName" type="text" <%= !@user ? "disabled value='Login to save'" : "" -%> />
+					</form>
+					<button id="saveButton" onclick="saveProgram()" <%= !@user ? "disabled" : "" -%> >Save</button>
+					<button onclick="clearProgram()" >Clear</button>
+					
+					<span>&nbsp;&nbsp;&nbsp;</span>
+
+					<button id="myProgramsButton" onclick="showPrograms()" <%= !@user ? "disabled" : "" -%> >Programs</button>
+					<button id="functionsButton" onclick="showFunctions()" <%= !@user ? "disabled" : "" -%> >Functions</button>
+					
+					<span>&nbsp;&nbsp;&nbsp;</span>
+					<span class="areaLabel">
+						Version
+					</span>
+					<button onclick="changeVersionProgram('prev')" <%= !@user ? "disabled" : "" -%> >Prev.</button>
+					<button onclick="changeVersionProgram('next')" <%= !@user ? "disabled" : "" -%> >Next</button>
+					<button onclick="changeVersionProgram('curr')" <%= !@user ? "disabled" : "" -%> >Curr.</button>
+					
+					<span id="programVersionLabel"></span>
+					<span>&nbsp;&nbsp;&nbsp;</span>
+					
+
+					<button onclick="shareProgram()" <%= !@user ? "disabled" : "" -%> >Share</button>
+					<button id="manageFriendsButton" onclick="manageFriends()" <%= !@user ? "disabled" : "" -%> >Friends</button>
+					<% if ! @user %>
+						<span class="areaLabel">Login&nbsp;to&nbsp;access&nbsp;all&nbsp;features</span>
+					<% end %>
+				</div>
+				
+				<div id="myPrograms" class="menu" style="max-height:700px; overflow:auto; display:none;">
+				</div>
+									
+				<div id="functions" class="menu" style="max-height:700px; overflow:auto; display:none;">
+				</div>
+									
+				<div id="mainContainer" cellpadding="0" cellspacing="5" style="width:100%;">
+
+					<div id="mainCol1" style="vertical-align:top;">
+							
+						<div id="functionCodeDiv" style="display:none;">
+							<div style="height:20px;">
+								&nbsp;
+								<span id="masterErrorState" class="areaLabel" style="background-color:red; color:white;">
+								</span>
+							</div>
+							<div id="functionCodeErrorState">
+								<span class="areaLabel">
+									Function
+								</span>
+								<button onclick="saveFunction()">Done</button>
+								<button onclick="cancelFunction()">Cancel</button>
+								<span class="areaLabel">
+									Ver.:
+								</span>
+								<button onclick="changeVersionFunction('prev')">Prev.</button>
+								<button onclick="changeVersionFunction('next')">Next</button>
+								<button onclick="changeVersionFunction('curr')">Curr.</button>
+								<div id="functionVersionLabel"></div>
+							</div>
+							<textarea class="thinBorder" wrap="off" id="functionEditor" style="white-space:nowrap; overflow:auto; width:100%; height:200px;"></textarea>
+						</div>
+
+						<div id="functionCodeDivDrag" class="dragBar" style="display:none; height:5px; width:100%; cursor:n-resize; border-bottom:2px dotted gray;">
+							&nbsp;
+						</div>
+							
+						<div id="startCodeDiv">
+							<span class="areaLabel">Start code</span>
+							<span id="startCodeErrorState" class="areaLabel" style="background-color:red; color:white;"></span>
+							<button style="visibility:hidden;">W</button>
+							<textarea class="thinBorder" wrap="off" id="startEditor" style="white-space:nowrap; overflow:auto; width:100%; height:200px;">Write Javascript here that runs once</textarea>
+						</div>
+
+						<div id="startCodeDivDrag" class="dragBar" style="height:5px; width:100%; cursor:n-resize; border-bottom:2px dotted gray;">
+							&nbsp;
+						</div>
+
+						<div id="loopCodeDiv">
+							<span class="areaLabel">Loop code</span>
+							<span id="loopCodeErrorState" class="areaLabel" style="background-color:red; color:white;"></span>
+							<textarea class="thinBorder" wrap="off" id="loopEditor" style="white-space:nowrap; overflow:auto; width:100%; height:300px;">Write Javascript here that runs continuously</textarea>
+						</div>
+
+						<div id="loopCodeDivDrag" class="dragBar" style="height:5px; width:100%; cursor:n-resize; border-bottom:2px dotted gray;">
+							&nbsp;
+						</div>
+
+						<div class="areaLabel">
+							Twiddlers 
+						</div>
+						<div class="thinBorder grayBackground">
+							<div id="createATwiddlerNote" style="padding:5px 5px 5px 5px;">
+								Create a twiddler by starting a variable name with underscore
+							</div>
+							<table id="twiddlers">
+							</table>
+						</div>
+					</div>
+
+					<div id="mainCol2" style="vertical-align:top;">
+						<div>
+							<span class="areaLabel">Canvas</span>
+							<button id="showMiniBrowserButton" onclick="showMiniBrowser()" style="position:relative; bottom:5px; float:right;">Show pages</button>
+							<img id="pauseButton" style="margin:1px 5px 0 5px; float:right; cursor:pointer;" src="/images/pause_button.png" onclick="pauseProgram()"/>
+							<span id="pauseWarning" style="float:right; font-weight:bold; display:none; background-color:yellow; color:black; padding:0 10px 0 10px; margin-right:10px;">Paused</span>
+							<span id="fps" style="float:right; font-size:9px; width:20px; position:relative; top:4px;"></span>
+							<span id="fpsWarning" style="font-weight:bold; display:none; background-color:yellow; color:black;">Frame rate low, try <a href="http://www.google.com/chrome">Chrome</a></span>
+							<span style="float:right; font-size:9px; position:relative; top:4px;">Frame rate: </span>
+							<button style="visibility:hidden;">W</button>
+							<!-- This button here just to have equal spacing -->
+						</div>
+						<div>
+							<canvas id="mainCanvas0" class="thinBorder">
+							</canvas>
+							<canvas id="mainCanvas1" class="thinBorder">
+							</canvas>
+							<div class="areaLabel">
+								Comments
+							</div>
+							<div id="programComments">
+							</div>
+						</div>
+					</div>
+
+					<div id="mainCol3" style="vertical-align:top;">
+						<div>
+							<form action="javascript:gotoPage()" style="padding:0 0 0 0; margin:0 0 0 0;">
+								<span>
+									<img style="cursor:pointer;" src="/images/back_button.png" onclick="backPage()"/>
+								</span>
+								<span>
+									<img style="cursor:pointer;" src="/images/home.png" onclick="loadPage('home',true)"/>
+								</span>
+								<% if @user %>
+									<span>
+										<img style="cursor:pointer;" src="/images/edit.png" onclick="editPage()"/>
+									</span>
+								<% end %>
+								<span>
+									<img style="cursor:pointer;" src="/images/users.png" onclick="loadPage('users',true)"/>
+								</span>
+								<span>
+									<img style="cursor:pointer;" src="/images/pages.png" onclick="loadPage('all',true)"/>
+								</span>
+								<input type="text" id="gotoPage" style="position:relative; bottom:4px; width:80px;"/>
+								<button onclick="gotoPage()" style="position:relative; bottom:5px;">Go</button>
+								<button onclick="hideMiniBrowser()" style="position:relative; bottom:5px; float:right; display:block;">Hide</button>
+							</form>
+						</div>
+						<% if ! @user %>
+							<div style="text-weight:bold;">
+								(Login to edit pages)
+							</div>
+						<% end %>
+						<div class="grayBackground thinBorder" style="" >
+							<div class="padding5 lesson" id="learnDiv" style="height:100%; overflow:auto;">
+							</div>
+						</div>
+					</div>
+					
+				</div>
+			</div>
+		</div>
+		
+		<div id="artPanel">
+			<div id="artContainer">
+			</div>
+		</div>
+		
+		<div id="refPanel">
+			<%= render :partial=>"help" -%>
+		</div>
+
+		<div id="videoPanel">
+			<div class="areaLabel">
+				Video Tutorials
+			</div>
+			<div style="width:600px; margin:0 0 0 15px;">
+				The following are video tutorials that follow our text tutorials.
+				I'm posting these a few per week so come back as more are posted.
+				I suggest switching youtube into "480p" mode by clicking on the bottom where it says "360p" and then going into full screen mode.
+			</div>
+			
+			<table cellspacing="10">
+				<tr>
+					<td>
+						<div class="areaLabel" style="margin-top:20px;">
+							Tutorial #1: Hello world
+						</div>				
+						<div style="margin:10px 0 0 0;">
+							<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/FWPJ7IFats4?hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/FWPJ7IFats4?hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>
+						</div>
+					</td>
+					<td>
+						<div class="areaLabel" style="margin-top:20px;">
+							Tutorial #2: Variables and animation
+						</div>				
+						<div style="margin:10px 0 0 0;">
+							<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/nsUMYW2eELM?hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/nsUMYW2eELM?hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<div class="areaLabel" style="margin-top:20px;">
+							Tutorial #3: Function calls
+						</div>				
+						<div style="margin:10px 0 0 0;">
+							<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/bIUxWm5FCao?hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/bIUxWm5FCao?hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>					
+						</div>
+					</td>
+					<td>
+						<div class="areaLabel" style="margin-top:20px;">
+							Tutorial #4: Twiddlers
+						</div>				
+						<div style="margin:10px 0 0 0;">
+							<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/OXbYQmwqFz4?hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/OXbYQmwqFz4?hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>					
+						</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+</div>
+
+

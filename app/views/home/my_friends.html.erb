@@ -1,0 +1,5 @@
+<% for f in @user.friends.sort{ |a,b| a.name <=> b.name } %>
+	<div class="friendLineItem" friendId="<%= f.id -%>">
+		<%= f.name -%>
+	</div>
+<% end %>

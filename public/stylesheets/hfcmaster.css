@@ -1,0 +1,128 @@
+body {
+	background-color: #DDDDCC;
+	font: normal 13px calibri,arial,sans-serif;
+}
+
+table {
+	font: normal 13px calibri,arial,sans-serif;
+}
+
+a {
+	font: normal 13px calibri,arial,sans-serif;
+	text-decoration: underline;
+}
+
+textarea {
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	-webkit-tab-size: 4;
+	tab-size: 4;
+	white-space: pre;
+}
+
+.ui-button-text-only .ui-button-text {
+	padding: 1px 8px 1px 8px;
+}
+
+.ui-tabs-selected {
+	border: 1px solid #aaaaaa !important; 
+	background: #ffffff url(images/ui-bg_inset-hard_80_ffffff_1x100.png) 50% 50% repeat-x !important;
+}
+
+.ui-widget textarea {
+	font: normal 13px consolas, monospace ! important;
+	background-color: #EEEEEE;
+	color: #2222DD;
+}
+
+.topHeading {
+	font: normal 25px consolas, monospace;
+	cursor: pointer;
+}
+
+.tabLabel {
+	font: bold 14px calibri,arial,sans-serif;
+	margin-top: 0.2em;
+	color: #000000;
+}
+
+.areaLabel {
+	font: normal 15px calibri,arial,sans-serif;
+	font-weight: bold;
+}
+
+.dragBar {
+	background-color: #FFFFFF;
+}
+
+.thinBorder {
+	border: solid 1px #DDDDDD;
+}
+
+.grayBackground {
+	background-color: #EEEEEE;
+}
+
+.menu {
+	background-color: #D9D8CB;
+	border: solid 1px #505050;
+	padding: 20px 20px 20px 20px;
+}
+
+.padding5 {
+	padding: 5px 5px 5px 5px;
+}
+
+.func {
+	font-weight: bold;
+}
+
+.topPad5 {
+	padding-top: 5px;
+}
+
+.code {
+	color: #2222DD;
+	font: normal 13px consolas, monospace;
+	white-space: pre;
+}
+
+.lesson p {
+	margin-left: 10px;
+}
+
+.lesson a {
+	cursor: pointer;
+}
+
+.lesson h1 {
+	font: bold 15px calibri,arial,sans-serif;
+	padding: 0 0 0 0;
+	margin: 0 0 0 0;
+}
+
+.lesson h2 {
+	font: bold 13px calibri,arial,sans-serif;
+	padding: 0 0 0 0;
+	margin: 0 0 0 5px;
+}
+
+.lesson .code {
+	margin: 0 0 0 15px;
+}
+
+.programNameLineItem {
+	padding: 2px 5px 2px 5px;
+	cursor: pointer;
+}
+
+.messageFrom {
+	font-weight: bold;
+}
+
+.message {
+}
+
+.messageBlock {
+	vertical-align: top;
+}

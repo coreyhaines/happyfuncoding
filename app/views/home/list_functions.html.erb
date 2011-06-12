@@ -1,0 +1,13 @@
+<div class="areaLabel" style="padding-bottom:5px;">
+	Public functions:
+</div>
+<% for f in PublicFunction.all.sort { |a,b| a.name.downcase <=> b.name.downcase } %>
+	<div>
+		<% if @user && @user.super_user? %>
+			<img src="/images/icon_x_small.png" onclick="deleteFunction( <%=f.id-%> )"/>
+		<% end %>
+		<span class="programNameLineItem" functionId="<%= f.id -%>" functionName="<%= f.name -%>">
+			<%= f.name -%>
+		</span>
+	</div>
+<% end %>

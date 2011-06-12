@@ -1,0 +1,47 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<html>
+
+	<head>	
+		<title>Happy Fun Coding</title>
+		<link rel="stylesheet" type="text/css" href="/stylesheets/hfcmaster.css" />
+		<link rel="icon" type="image/png" href="/images/hfc_icon.png" />	
+	</head>
+
+	<body class="hfc">
+		<div>
+			<span class="topHeading" onclick="document.location='/'">
+				happyfuncoding.com
+			</span>
+			<span onclick="document.location='/'">
+				by <a href="http://www.mine-control.com/zack">Zack Booth Simpson</a> & <a href="http://robsresume.com">Rob Corell</a>, version 1.1
+			</span>
+				
+			<div style="float:right;">
+				<% if @user %>
+					<div>
+						<%= User.current_user.name -%>
+					</div>
+					<div>
+						<a href="/home/logout">Logout</a>
+					</div>
+				<% else %>
+					<div>
+						Anonymous user
+					</div>
+					<div>
+						<a href="/home/login">Login</a>
+					</div>
+				<% end %>
+			</div>
+		</div>
+
+		<div style="margin-top:5px;">
+			<%= yield -%>
+		</div>
+
+	</body>
+
+</html>
+
+					

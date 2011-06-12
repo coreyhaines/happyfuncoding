@@ -1,0 +1,27 @@
+<div style="margin-left:0px;">
+	<table cellspacing="0" cellpadding="5" style="width:100%;">
+		<% for m in @messages %>
+			<tr>
+				<td class="messageBlock" style="border-bottom:1px dotted #DDDDDD;">
+					<span class="messageFrom"><%= User.find( m.user_id ).name -%>&nbsp;says:</span>
+				</td>
+				<td class="messageBlock" style="border-bottom:1px dotted #DDDDDD;">
+					<span class="message">
+						<%= m.message -%>
+					</span>
+					<% if @user.super_user? %>
+						<img src="/images/icon_x_small.png" style="float:right;" onclick="deleteComment(<%=m.id-%>)"/>
+					<% end %>
+				</td>
+			</tr>
+		<% end %>
+	</table>
+	<div style="width:100%;">
+		<div style="width:100%;">
+			<textarea id="postComment" rows="3" class="thinBorder" style="width:100%;"></textarea>
+		</div>
+		<div style="text-align:center;">
+			<button onclick="postComment()">Send</button>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,432 @@
+	var savePower = false;
+	
+    var frameComplete = true;
+	var frameNum = 0;
+    var context = [];
+    var canvasW = 350;
+    var canvasH = 350;
+    var mouseX=0, mouseY=0, mouseDown=false;
+	var keyDown=null;
+	var doubleBuffer = false;
+
+	// Main Code
+	//======================================================================================================
+
+	imageDims = {};
+	function getImageDims() {
+		for( var i in images ) {
+			imageDims[i] = [ images[i].width, images[i].height ];
+		}
+	}
+
+	var errorInLoopCode = false;
+	function setErrorState( blockName, exceptMessage, exceptLine ) {
+		var header = "";	
+		if( blockName == "Start code" ) {
+			header = exceptLine ? ("Line "+exceptLine+": ") : ""
+			div = "startCodeErrorState";
+		}
+		else if( blockName == "Loop code" ) {
+			header = exceptLine ? ("Line "+exceptLine+": ") : ""
+			div = "loopCodeErrorState";
+		}
+		else {
+			header = blockName + ": " + (exceptLine ? (" line "+exceptLine+": ") : "");
+			div = "masterErrorState";
+		}
+	
+		if( exceptMessage ) {
+			$("#"+div).html( header + exceptMessage );
+			if( blockName == "Loop code" ) {
+				errorInLoopCode = true;
+			}
+		}
+		else {
+			errorInLoopCode = false;
+			$("#"+div).html( "" );
+		}
+	}
+	
+	function colorToString( r, g, b ) {
+        r = Math.max( 1, Math.min( 255, r*255 ) );
+        g = Math.max( 1, Math.min( 255, g*255 ) );
+        b = Math.max( 1, Math.min( 255, b*255 ) );
+		color = ( (1<<24) | (r<<16) | (g<<8) | b ).toString(16);
+        return "#" + color.substring( 1, 7 );
+	}
+	
+	function DrawState() {
+		this.fill = "#000000";
+		this.fillA = 1;
+		this.lineWidth = 1;
+		this.lineCap = "butt";
+		this.stroke = "#000000";
+		this.strokeA = 1;
+		this.gradient = null;
+		
+		this.setFill = function( r, g, b, a ) {
+			this.gradient = null;
+            this.fill = colorToString( r, g, b );
+            this.fill = "#" + this.fill.substring( 1, 7 );
+            this.fillA = a;
+		}
+		
+		this.setStroke = function( w, r, g, b, a, cap ) {
+			this.lineWidth = w;
+            this.stroke = colorToString( r, g, b );
+            this.strokeA = a;
+			this.lineCap = cap;
+		}
+		
+		this.createGradient = function( x0, y0, x1, y1 ) {
+			this.gradient = context[0].createLinearGradient(x0,y0,x1,y1);
+		}
+		
+		this.createGradientRadial = function( x0, y0, r0, x1, y1, r1 ) {
+			this.gradient = context[0].createRadialGradient(x0,y0,r0,x1,y1,r1);
+		}
+		
+		this.addColorStop = function( p, r, g, b ) {
+			this.gradient.addColorStop( p, colorToString( r, g, b ) );
+		}
+		
+		this.loadFillState = function(context) {
+			context.fillStyle = this.gradient ? this.gradient : this.fill;
+            context.globalAlpha = this.fillA;
+		}
+
+		this.loadStrokeState = function(context) {
+            context.lineWidth = this.lineWidth;
+            context.strokeStyle = this.stroke;
+            context.globalAlpha = this.strokeA;
+			context.lineCap = this.lineCap;
+		}
+		
+		this.reset = function() {
+			this.setFill( 0, 0, 0, 1 );
+			this.setStroke( 1, 0, 0, 0, 1, "butt" );
+		}
+	}
+	
+	var drawState = new DrawState();
+	var images = [];
+
+	var challengeStartCode = null;
+	var challengeLoopCode = null;
+
+	var startFrameTime;
+				
+    function startThread() {
+		resize();
+if( savePower ) return;		
+		drawState.reset();
+	
+		startCode = challengeStartCode ? challengeStartCode : $("#startEditor").val();
+		//startCode = challengeStartCode ? challengeStartCode : editAreaLoader.getValue( "startEditor" );
+		
+		loopCode  = challengeLoopCode  ? challengeLoopCode  : $("#loopEditor").val();
+		//loopCode  = challengeLoopCode  ? challengeLoopCode  : editAreaLoader.getValue( "loopEditor" );
+		
+		functionCode = $("#functionEditor").val();
+		
+		// SEARCH for references to global functions
+		var matches = [];
+		var source = [ startCode, loopCode, functionCode ];
+		for( i in publicFunctions ) {
+			source.push( publicFunctions[i] );
+		}
+		
+		for( var i=0; i<source.length; i++ ) {
+			var str = source[i];
+			var regex = /(\$[a-zA-Z0-9_]+)/img;
+			var match = regex.exec( str );
+			while( match instanceof Array ) {
+				matches.push( match );
+				match = regex.exec( str );
+			}
+		}
+		
+		for( i in matches ) {
+			bindFunction( matches[i][1] );
+		}
+		
+		// CHECK if start code contains a clear, if so use double buffering
+		$("#mainCanvas1").css( "visibility", "hidden" );
+		doubleBuffer = false;
+		if( loopCode.match( "^\\s*clear\\s*(\\s*)" ) ) {
+			doubleBuffer = true;
+		}
+
+		$("#twiddlers").html( "<tr><td><b>Name</b></td><td><b>Value</b></td><td><b>Restart</b></td></tr>" );
+		$("#createATwiddlerNote").css( "display", "block" );
+		twiddlers = [];
+		var lines = startCode.split( "\n" );
+		var twiddlerCount = 0;
+		for( var i in lines ) {
+			var m = lines[i].match( "^(_\\S+)\\s*=\\s*(\\S+)" )
+			if( m ) {
+				$("#createATwiddlerNote").css( "display", "none" );
+				twiddlers[m[1]] = m[2];
+				$("#twiddlers").append( "<tr><td>"+m[1]+"</td><td><input class='twiddler' varName='"+m[1]+"' type='text' id='" + m[1] + "' value='"+m[2]+"'></td><td><input type='checkbox' class='twiddlerRestartCheck' varName='"+m[1]+"' id='"+m[1]+"_restart" + "'"+ (twiddlerChecks[m[1]] ? "checked" : "") +"/></td></tr>" );
+				twiddlerCount++;
+			}
+		}
+		if( twiddlerCount > 0 ) {
+			$("#twiddlers").prepend( "<tr><td colspan='2'>Click and drag mouse up and down on field to change value</td></tr>" );
+		}
+		else {
+			$("#twiddlers").html("");
+		}
+		setupTwiddlers();
+
+		// DELETE the old thread
+		// PROBLEM: Acting like this isn't doing anything
+		$.Hive.destroy();
+
+		frameNum = 0;
+		$("#mainCanvas1").css( "visibility", "hidden" );
+		context[0].setTransform( 1, 0, 0, 1, 0, 0 );
+		context[1].setTransform( 1, 0, 0, 1, 0, 0 );
+		
+		// LAUNCH a new thread
+		$.Hive.create({
+		    count: 1,
+		    worker: '/javascripts/play_worker.js',
+            receive: function (data) {
+                if( data.cmd == "done" ) {
+					setErrorState( data.args[0], data.args[1], data.args[2] );
+                    frameComplete = true;
+                }
+                else if( data.cmd == "functions" ) {
+					threadReturnedFunctions = data.args;
+                }
+                else if( data.cmd == "circle" ) {
+					drawState.loadStrokeState( context[frameNum%2] );
+                    context[frameNum%2].beginPath();
+                    context[frameNum%2].arc( data.args[0], data.args[1], data.args[2], 0, 3.14*2, false );
+                    context[frameNum%2].closePath();
+                    context[frameNum%2].stroke();
+                }
+                else if( data.cmd == "disc" ) {
+					drawState.loadFillState( context[frameNum%2] );
+                    context[frameNum%2].beginPath();
+                    context[frameNum%2].arc( data.args[0], data.args[1], data.args[2], 0, 3.14*2, false );
+                    context[frameNum%2].closePath();
+                    context[frameNum%2].fill();
+                }
+                else if( data.cmd == "line" ) {
+					drawState.loadStrokeState( context[frameNum%2] );
+                    context[frameNum%2].beginPath();
+                    context[frameNum%2].moveTo( data.args[0], data.args[1] );
+                    context[frameNum%2].lineTo( data.args[2], data.args[3] );
+                    context[frameNum%2].stroke();
+                }
+				else if( data.cmd == "arc" ) {
+					drawState.loadStrokeState( context[frameNum%2] );
+                    context[frameNum%2].beginPath();
+                    context[frameNum%2].arc( data.args[0], data.args[1], data.args[2], data.args[3], data.args[4], data.args[5] );
+					context[frameNum%2].stroke();
+				}
+				else if( data.cmd == "box" ) {
+					drawState.loadStrokeState( context[frameNum%2] );
+                    context[frameNum%2].strokeRect( data.args[0], data.args[1], data.args[2], data.args[3] );
+				}
+				else if( data.cmd == "rect" ) {
+					drawState.loadFillState( context[frameNum%2] );
+                    context[frameNum%2].fillRect( data.args[0], data.args[1], data.args[2], data.args[3] );
+				}
+                else if( data.cmd == "text" ) {
+					drawState.loadFillState( context[frameNum%2] );
+					context[frameNum%2].font = "14pt Calibri";
+					context[frameNum%2].textBaseline = "top";
+                    context[frameNum%2].fillText( data.args[0], data.args[1], data.args[2] );
+                }
+
+                else if( data.cmd == "fill" ) {
+					drawState.setFill( data.args[0], data.args[1], data.args[2], data.args[3] );
+                }
+                else if( data.cmd == "stroke" ) {
+					drawState.setStroke( data.args[0], data.args[1], data.args[2], data.args[3], data.args[4], data.args[5] );
+                }
+
+                else if( data.cmd == "clear" ) {
+                    context[frameNum%2].setTransform( 1, 0, 0, 1, 0, 0 );
+                    context[frameNum%2].fillStyle = colorToString( data.args[0], data.args[1], data.args[2] );
+                    context[frameNum%2].globalAlpha = 1;
+                    context[frameNum%2].fillRect( 0, 0, canvasW, canvasH );
+                }
+				else if( data.cmd == "identity" ) {
+                    context[frameNum%2].setTransform( 1, 0, 0, 1, 0, 0 );
+				}
+				else if( data.cmd == "translate" ) {
+					context[frameNum%2].translate( data.args[0], data.args[1] );
+				}
+				else if( data.cmd == "scale" ) {
+					context[frameNum%2].scale( data.args[0], data.args[1] );
+				}
+				else if( data.cmd == "rotate" ) {
+					context[frameNum%2].rotate( data.args[0] );
+				}
+				else if( data.cmd == "push" ) {
+					context[frameNum%2].save();
+				}
+				else if( data.cmd == "pop" ) {
+					context[frameNum%2].restore();
+				}
+				
+				else if( data.cmd == "beginPath" ) {
+					context[frameNum%2].beginPath();
+				}
+				else if( data.cmd == "closePath" ) {
+					context[frameNum%2].closePath();
+				}
+				else if( data.cmd == "moveTo" ) {
+					context[frameNum%2].moveTo( data.args[0], data.args[1] );
+				}
+				else if( data.cmd == "lineTo" ) {
+					context[frameNum%2].lineTo( data.args[0], data.args[1] );
+				}
+				else if( data.cmd == "curveTo" ) {
+					context[frameNum%2].quadraticCurveTo( data.args[0], data.args[1], data.args[2], data.args[3] );
+				}
+				else if( data.cmd == "bezierTo" ) {
+					context[frameNum%2].bezierCurveTo( data.args[0], data.args[1], data.args[2], data.args[3], data.args[4], data.args[5] );
+				}
+				else if( data.cmd == "arcTo" ) {
+					context[frameNum%2].arcTo( data.args[0], data.args[1], data.args[2], data.args[3], data.args[4] );
+				}
+				else if( data.cmd == "strokePath" ) {
+					drawState.loadStrokeState( context[frameNum%2] );
+					context[frameNum%2].stroke();
+				}
+				else if( data.cmd == "fillPath" ) {
+					drawState.loadFillState( context[frameNum%2] );
+					context[frameNum%2].fill();
+				}
+				else if( data.cmd == "gradient" ) {
+					drawState.createGradient( data.args[0], data.args[1], data.args[2], data.args[3] );
+				}
+				else if( data.cmd == "gradientRadial" ) {
+					drawState.createGradientRadial( data.args[0], data.args[1], data.args[2], data.args[3], data.args[4], data.args[5] );
+				}
+				else if( data.cmd == "addColorStop" ) {
+					drawState.addColorStop( data.args[0], data.args[1], data.args[2], data.args[3] );
+				}
+				else if( data.cmd == "debug" ) {
+					console.log( data.args[0] );
+				}
+
+                else if( data.cmd == "image" ) {
+					var i = images[ data.args[0] ];
+					if( ! i ) {
+						i = new Image();
+						if( data.args[0].match( /http(s)?:/ ) ) {
+							i.src = data.args[0];
+						}
+						else {
+							i.src = "/home/get_asset?name=" + data.args[0];
+						}
+						i.onload = getImageDims;
+						images[ data.args[0] ] = i;
+					}
+					context[frameNum%2].drawImage( i, data.args[1], data.args[2] );
+                }
+            }
+        });
+
+		codeBlocks = [];
+		codeBlockNames = [];
+		for( var i in publicFunctions ) {
+			codeBlockNames.push( i );
+			codeBlocks.push( publicFunctions[i] );
+		}
+		codeBlocks.push( startCode );
+		codeBlockNames.push( "Start code" );
+		
+		setErrorState( "", "", "" );
+        $.Hive.get(0).send( [codeBlockNames,codeBlocks,null,0,0,false,null,null,imageDims,false] );
+
+        frameComplete = false;
+	}
+	
+	var frameRates = [];
+		
+    function runOneFrame() {
+if( savePower ) return;
+		if( !pause && frameComplete ) {
+			context[0].setTransform( 1, 0, 0, 1, 0, 0 );
+			context[1].setTransform( 1, 0, 0, 1, 0, 0 );
+
+			if( $.Hive.get(0) ) {
+				var loopCode = challengeLoopCode ? challengeLoopCode : $("#loopEditor").val();
+				//var loopCode = challengeLoopCode  ? challengeLoopCode  : editAreaLoader.getValue( "loopEditor" );
+				
+				var stopFrameTime = new Date().getTime();
+				var frameRate = 1000.0 / (stopFrameTime - startFrameTime);
+				frameRates[ frameNum % 20 ] = frameRate;
+				var avgFrameRate = 0;
+				for( var i=0; i<20; i++ ) {
+					avgFrameRate += frameRates[i];
+				}
+				var fps = avgFrameRate / 20;
+				<% if ! @is_chrome %>
+					if( fps < 20 && frameNum > 20 ) {
+						$("#fpsWarning").css( "display", "inline-block" );
+					}
+					else {
+						$("#fpsWarning").css( "display", "none" );
+					}
+				<% end %>
+			
+				$("#fps").html( fps.toFixed(0) );
+				startFrameTime = new Date().getTime();
+                $.Hive.get(0).send( [ ["Loop code"], [loopCode], keyDown, mouseX, mouseY, mouseDown, null, twiddlers, imageDims, true ] );
+                frameComplete = false;
+            }
+
+			if( doubleBuffer && ! errorInLoopCode ) {
+				frameNum++;
+				if( frameNum % 2 == 0 ) {
+					$("#mainCanvas1").css( "visibility", "visible" );
+				}
+				else {
+					$("#mainCanvas1").css( "visibility", "hidden" );
+				}
+			}
+			else {
+				$("#mainCanvas1").css( "visibility", "hidden" );
+			}
+        }
+        setTimeout( runOneFrame, 1 );
+    }
+
+	// public functions
+	//===================================================================================
+	
+	var publicFunctions = [];
+	var publicFunctionsLoad = [];
+	var publicFunctionsEditting = "";
+	
+	function clearFunctions() {
+		publicFunctions = [];
+		publicFunctionsLoad = [];
+		publicFunctionsEditting = "";
+		$("#functionEditor").val( "" );
+	}
+
+	function updateFunctionsCode() {
+		publicFunctions[ publicFunctionsEditting ] = $("#functionEditor").val();
+	}
+	
+	function bindFunction( name ) {
+		if( ! publicFunctionsLoad[name] ) {
+			publicFunctionsLoad[name] = true;
+			$.get( "/home/load_function", { "name":name }, function(data) {
+				if( data != "not found" ) {
+					publicFunctions[data.name] = data.code;
+					startThread();
+				}
+			});
+		}
+	}
+	

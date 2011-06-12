@@ -1,0 +1,14 @@
+
+development:
+  adapter: mysql
+  encoding: utf8
+  database: hfc
+  username: root
+  password: 
+
+production:
+  adapter: mysql 
+  database: hfcprod
+  username: 
+  password: 
+  socket: /var/run/mysqld/mysqld.sock

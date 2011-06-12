@@ -1,0 +1,16 @@
+<div style="padding: 10px 10px 10px 10px;">
+	You are exporting functions to the public library but there are conflicts with the following functions.
+	Change their name(s) and save again.
+</div>
+
+<div style="padding: 10px 10px 10px 10px; font-weight:bold;">
+	<% for f in @conflicts %>
+		<div>
+			<%= f -%>
+		</div>
+	<% end %>
+</div>
+
+<center>
+	<button onclick="closeExportConflictDialog()">Ok</button>
+</center>

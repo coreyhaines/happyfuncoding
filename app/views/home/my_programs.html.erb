@@ -1,0 +1,24 @@
+<div class="areaLabel" style="padding-bottom:5px;">
+	My programs:
+</div>
+<% for p in @user.programs.sort { |a,b| a.name.downcase <=> b.name.downcase } %>
+	<div class="programNameLineItem" programId="<%= p.id -%>">
+		<%= p.name.downcase -%>
+	</div>
+<% end %>
+
+<div class="areaLabel" style="padding:15px 5px 5px 0px;">
+	My friends:
+</div>
+<% for f in @user.friends %>
+	<% if f.programs.length > 0 %>
+		<div style="margin-left:10px;">
+			<b><%= f.name -%></b>
+			<% for p in f.programs.sort { |a,b| a.name.downcase <=> b.name.downcase } %>
+				<div class="programNameLineItem" style="padding-left: 10px;" programId="<%= p.id -%>">
+					<%= p.name.downcase %>
+				</div>
+			<% end %>
+		</div>
+	<% end %>
+<% end %>

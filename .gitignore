@@ -1,0 +1,6 @@
+server.sln
+server.stproj
+config/database.yml
+tmp/**/*
+log/*.log
+*.orig

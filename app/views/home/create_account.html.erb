@@ -1,0 +1,46 @@
+<% if @errors.length > 0 %>
+	<div style="background-color:FF8080; padding:10px 10px 10px 10px;">
+		<div class="areaLabel">Create account had the following errors:</div>
+		<% for e in @errors %>
+			<div><%= e -%></div>
+		<% end %>
+	</div>
+<% end %>
+
+<div style="margin: 10px 0px 0px 50px;">
+	<form action="/home/create_account" method="post" name="createform">
+		<table>
+			<tr>
+				<td>
+					<b>User name</b>
+				</td>
+				<td>
+					<input id="name" name="name" size="30" type="text" />
+				</td>
+			</tr>
+			<tr>
+			<td>
+					<b>Password</b>
+			</td>
+			<td>
+			<input id="password" name="password" size="30" type="password"/>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<b>Verify Password</b>
+				</td>
+				<td>
+					<input id="password_verify" name="password_verify" size="30" type="password"/>
+				</td>
+			</tr>
+			<tr>
+				<td>
+				</td>
+				<td>
+					<button onclick="document.forms['createform'].submit()">Create account</button>
+				</td>
+			</tr>									
+		</table>
+	</form>		
+</div>

@@ -1,0 +1,316 @@
+<table style="width:100%;" cellspacing="10">
+	<tr>
+		<td style="width:50%; vertical-align:top;">
+
+
+			<div class="areaLabel topPad5">
+				Basic drawing
+			</div>
+			<div class="thinBorder grayBackground padding5">
+				<table>
+					<tr>
+						<td class="func">clear(r=1,g=1,b=1)</td><td>clear the canvas</td>
+					</tr>
+					<tr>
+						<td class="func">circle(x,y,r)</td><td>draw circle centered at x, y with radius r using stroke</td>
+					</tr>
+					<tr>
+						<td class="func">disc(x,y,r)</td><td>draw circle centered at x, y with radius r using fill</td>
+					</tr>
+					<tr>
+						<td class="func">line(x0,y0,x1,y1)</td><td>draw a line from (x0,y0) to (x1,y1)</td>
+					</tr>
+					<tr>
+						<td class="func">arc(x,y,r,a0,a1,c=false)</td><td>arc center (x,y) with (r)adius from angle a0-a1 with anticlockwise spin c (boolean)</td>
+					</tr>
+					<tr>
+						<td class="func">box(x,y,w,h)</td><td>draw a box outline from x, y with (w)idth and (h)eight</td>
+					</tr>
+					<tr>
+						<td class="func">rect(x,y,w,h)</td><td>draw a filled rect from x, y with (w)idth and (h)eight</td>
+					</tr>
+					<tr>
+						<td class="func">text(s,x=0,y=0)</td><td>print text string s at (x,y)</td>
+					</tr>
+					<tr>
+						<td class="func">image(url,x,y)</td><td>draw image loaded from url at x, y</td>
+					</tr>
+					<tr>
+						<td class="func">imageWidth(url)</td><td>width of image</td>
+					</tr>
+					<tr>
+						<td class="func">imageHeight(url)</td><td>height of image</td>
+					</tr>
+					<tr>
+						<td class="func">fill(r=0,g=0,b=0,a=1)</td><td>draw with a fill of (r)ed, (g)reen, (b)lue, and (a)lpha</td>
+					</tr>
+					<tr>
+						<td class="func">stroke(w=1,r=0,g=0,b=0,a=1,cap="butt")</td><td>set line stroke to (w)idth, (r)ed, (g)reen, (b)lue, and (a)lpha with cap=[butt|square|round]</td>
+					</tr>
+					<tr>
+						<td class="func">width()</td><td>width of the play area</td>
+					</tr>
+					<tr>
+						<td class="func">height()</td><td>height of the play area</td>
+					</tr>
+					<tr>
+						<td class="func">cenX()</td><td>horizontal center od canvas (width / 2)</td>
+					</tr>
+					<tr>
+						<td class="func">cenY()</td><td>vertical center of canvas (height / 2)</td>
+					</tr>
+					<tr>
+						<td class="func">gradient(x0,y0,x1,y1)</td><td>linear gradient from (x0,y0) to (x1,y1)</td>
+					</tr>
+					<tr>
+						<td class="func">gradientRadial(x0,y0,r0,x1,y1,r1)</td><td>radial gradient from (x0,y0) radius r0 to (x1,y1) radius r1</td>
+					</tr>
+					<tr>
+						<td class="func">gradientAddColor(p,r,g,b)</td><td>add a color p percent along the gradient with color (r,g,b)</td>
+					</tr>
+				</table>
+			</div>
+
+			<div class="areaLabel topPad5">
+				Paths
+			</div>
+			<div class="thinBorder grayBackground padding5">
+				<table>
+					<tr>
+						<td class="func">pathBegin()</td><td>begin path</td>
+					</tr>
+					<tr>
+						<td class="func">pathClose()</td><td>close a path (forms a closed polygon)</td>
+					</tr>
+					<tr>
+						<td class="func">pathMoveTo(x,y)</td><td>move the path pen to x, y</td>
+					</tr>
+					<tr>
+						<td class="func">pathLineTo(x,y)</td><td>draw line from current vertex to x, y</td>
+					</tr>
+					<tr>
+						<td class="func">pathCurveTo(cx,cy,x,y)</td><td>curve using control point cx, cy to x, y</td>
+					</tr>
+					<tr>
+						<td class="func">pathBezierTo(cx0,cy0,cx1,cy1,x,y)</td><td>bezier using control points cx0,cy0 and cx1,cy1 to x,y</td>
+					</tr>
+					<tr>
+						<td class="func">pathArcTo(x0,y0,x1,y1,r)</td><td>arc to (x0,y0) and (x1,y1) with (r)adius</td>
+					</tr>
+					<tr>
+						<td class="func">pathStroke()</td><td>stroke along the path using current stroke() options</td>
+					</tr>
+					<tr>
+						<td class="func">pathFill()</td><td>fill a closed polygon using current fill() options</td>
+					</tr>
+				</table>
+			</div>
+
+			<div class="areaLabel topPad5">
+				Transforms
+			</div>
+			<div class="thinBorder grayBackground padding5">
+				<table>
+					<tr>
+						<td class="func">identity()</td><td>reset the transform</td>
+					</tr>
+					<tr>
+						<td class="func">translate(x,y)</td><td>move drawing center by x,y</td>
+					</tr>
+					<tr>
+						<td class="func">scale(x)</td><td>uniform scale drawing by x</td>
+					</tr>
+					<tr>
+						<td class="func">scale(x,y)</td><td>scale drawing by x, y</td>
+					</tr>
+					<tr>
+						<td class="func">rotate(a)</td><td>rotate by a radians</td>
+					</tr>
+					<tr>
+						<td class="func">pushState()</td><td>push the transform state</td>
+					</tr>
+					<tr>
+						<td class="func">popState()</td><td>pop the transform state</td>
+					</tr>
+					<tr>
+						<td class="func">project(x,y)</td><td>project from world to screen space</td>
+					</tr>
+					<tr>
+						<td class="func">unproject(x,y)</td><td>unproject from screen to world space</td>
+					</tr>
+				</table>
+			</div>
+
+			<div class="areaLabel topPad5">
+				Matricies <a href="http://sylvester.jcoglan.com/">sylvester.js</a>
+			</div>
+			<div class="thinBorder grayBackground padding5">
+				<table>
+					<tr>
+						<td class="func">$M([[],[]])</td><td>create matrix from nested arrays</td>
+					</tr>
+					<tr>
+						<td class="func">$V([])</td><td>create vector from array</td>
+					</tr>
+					<tr>
+						<td colspan="2">Much more, see <a href="http://sylvester.jcoglan.com/docs">Sylvester docs</a></td>
+					</tr>
+				</table>
+			</div>
+			
+		</td>
+		<td style="width:50%; vertical-align:top;">
+
+			<div class="areaLabel topPad5">
+				Math
+			</div>
+			<div class="thinBorder grayBackground padding5">
+				<table>
+					<tr>
+						<td class="func">abs(x)</td><td>absolute value of x</td>
+					</tr>
+					<tr>
+						<td class="func">acos(x)</td><td>arc cosine of x</td>
+					</tr>
+					<tr>
+						<td class="func">asin(x)</td><td>arc sine of x</td>
+					</tr>
+					<tr>
+						<td class="func">atan(x)</td><td>arc tangent of x</td>
+					</tr>
+					<tr>
+						<td class="func">atan2(y,x)</td><td>arc tangent of y by x triangle</td>
+					</tr>
+					<tr>
+						<td class="func">ceil(x)</td><td>x rounded to next integer</td>
+					</tr>
+					<tr>
+						<td class="func">cos(x)</td><td>cosine of x</td>
+					</tr>
+					<tr>
+						<td class="func">distance(x0,y0,x1,y1)</td><td>distance between points (x0,y) and (x1,y1)</td>
+					</tr>
+					<tr>
+						<td class="func">e()</td><td>constant e</td>
+					</tr>
+					<tr>
+						<td class="func">exp(x)</td><td>e ^ x</td>
+					</tr>
+					<tr>
+						<td class="func">floor(x)</td><td>x rounded down to the next integer</td>
+					</tr>
+					<tr>
+						<td class="func">log(x)</td><td>natural log of x</td>
+					</tr>
+					<tr>
+						<td class="func">max(a,b,...)</td><td>maximum value of a list</td>
+					</tr>
+					<tr>
+						<td class="func">min(a,b,...)</td><td>minimum value of a list</td>
+					</tr>
+					<tr>
+						<td class="func">pi()</td><td>constant pi</td>
+					</tr>
+					<tr>
+						<td class="func">pi2()</td><td>constant 2 * pi</td>
+					</tr>
+					<tr>
+						<td class="func">pow(x,y)</td><td>x ^ y</td>
+					</tr>
+					<tr>
+						<td class="func">rand(n=1)</td><td>random real between 0 - n</td>
+					</tr>
+					<tr>
+						<td class="func">rand(m=0,n=1)</td><td>random real between m - n</td>
+					</tr>
+					<tr>
+						<td class="func">randi(n=2)</td><td>random integer between 0 - n-1</td>
+					</tr>
+					<tr>
+						<td class="func">randi(m=0,n=2)</td><td>random integer between m - n-1</td>
+					</tr>
+					<tr>
+						<td class="func">round(x)</td><td>rounds x to nearest integer</td>
+					</tr>
+					<tr>
+						<td class="func">sin(x)</td><td>sine of x</td>
+					</tr>
+					<tr>
+						<td class="func">sqrt(x)</td><td>square root of x</td>
+					</tr>
+					<tr>
+						<td class="func">tan(x)</td><td>tangent of x</td>
+					</tr>
+				</table>
+			</div>
+
+			<div class="areaLabel topPad5">
+				Events & I/O
+			</div>
+			<div class="thinBorder grayBackground padding5">
+				<table>
+					<tr>
+						<td class="func">delay(n)</td><td>delay n milliseconds</td>
+					</tr>
+					<tr>
+						<td class="func">time()</td><td>milliseconds since Jan 1, 1970</td>
+					</tr>
+					<tr>
+						<td class="func">keyDown()</td><td>returns down key or null. (Note, only one key can be down at a time)</td>
+					</tr>
+					<tr>
+						<td class="func">mouseX()</td><td>x position of mouse (top left = 0,0)</td>
+					</tr>
+					<tr>
+						<td class="func">mouseY()</td><td>y position of mouse (top left = 0,0)</td>
+					</tr>
+					<tr>
+						<td class="func">mouseDown()</td><td>true if mouse is down</td>
+					</tr>
+					<tr>
+						<td class="func">debug(o)</td><td>log object o to console</td>
+					</tr>
+				</table>
+
+			</div>
+
+			<div class="areaLabel topPad5">
+				Text Editor Commands
+			</div>
+			<div class="thinBorder grayBackground padding5">
+				For use when editing the tutorials and challenge pages
+				<table>
+					<tr>
+						<td class="func">:h1 Some heading 1</td><td>Puts "Some heading 1" in heading 1 font</td>
+					</tr>
+					<tr>
+						<td class="func">:h2 Some heading 2</td><td>Puts "Some heading 2" in heading 2 font</td>
+					</tr>
+					<tr>
+						<td class="func">:code</td><td>Start a code block</td>
+					</tr>
+					<tr>
+						<td class="func">:end</td><td>End a code block</td>
+					</tr>
+					<tr>
+						<td class="func">* line</td><td>Bullet element</td>
+					</tr>
+					<tr>
+						<td class="func">`page name,link description`</td><td>Create a hyperlink to "page name" showing "link description"</td>
+					</tr>
+					<tr>
+						<td class="func">`program:user:name,link description`</td><td>Load a program by user with name showing link description</td>
+					</tr>
+					<tr>
+						<td class="func">`challenge:user:name,link description`</td><td>Like program but keeps code hidden</td>
+					</tr>
+					<tr>
+						<td class="func">newline</td><td>Creates a new paragaph</td>
+					</tr>
+				</table>
+			</div>
+
+
+		</td>
+	</tr>
+</table>
